@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block c %}
+<h1>{{ titulo }}</h1>
+{% if vista != 'cola' %}
+<form method="get" style="margin-bottom:12px"><input type="hidden" name="v" value="{{ vista }}">
+<select name="estado" aria-label="Filtrar por estado" onchange="this.form.submit()"><option value="">Todos los estados</option>
+{% for k, v in ET.items() %}<option value="{{ k }}" {{ 'selected' if estado == k }}>{{ v }}</option>{% endfor %}</select></form>
+{% endif %}
+{% for t in rows %}
+<a class="tk {{ t.prioridad }}" href="{{ url_for('ticket', tid=t.id) }}"><b>#{{ t.id }} · {{ t.asunto }}</b><span class="badge {{ t.estado }}">{{ ET[t.estado] }}</span>
+<small>{{ t.categoria }} · prioridad {{ t.prioridad }} · {{ t.moderador or 'Sin asignar' }} · {{ t.creado.strftime('%d/%m/%Y %H:%M') }}</small></a>
+{% else %}<p class="empty">No hay tickets aquí por ahora.{% if session.rol == 'client' %} <a href="{{ url_for('nuevo') }}">Crea tu primera solicitud</a>.{% endif %}</p>{% endfor %}
+{% endblock %}

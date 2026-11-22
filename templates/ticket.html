@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% block c %}
+<div class="card">
+<h1>#{{ t.id }} · {{ t.asunto }}</h1>
+<p class="sub">{{ t.categoria }} · prioridad {{ t.prioridad }} · {{ t.creado.strftime('%d/%m/%Y %H:%M') }} · <span class="badge {{ t.estado }}">{{ ET[t.estado] }}</span></p>
+<p class="desc">{{ t.descripcion }}</p>
+{% if session.rol == 'client' %}<p class="sub">Lo atiende: {{ t.moderador or 'aún sin asignar' }}</p>{% endif %}
+</div>
+
+{% if t.cliente %}<div class="card"><b>Datos del usuario</b><br>{{ t.cliente }} · {{ t.email }} · {{ t.tel or 'sin teléfono' }}</div>
+{% elif session.rol == 'mod' %}<p class="sub">Reclama el ticket para ver los datos del usuario. Los demás moderadores dejarán de verlo.</p>{% endif %}
+
+{% if session.rol == 'mod' and t.libre %}
+<form method="post" action="{{ url_for('reclamar', tid=t.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="btn">Reclamar ticket</button></form>
+{% endif %}
+
+{% if t.gestiona %}
+<div class="card">
+<div class="row">
+<form method="post" action="{{ url_for('estado', tid=t.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label for="estado">Estado</label><div class="row"><select id="estado" name="estado">{% for k, v in ET.items() %}<option value="{{ k }}" {{ 'selected' if t.estado == k }}>{{ v }}</option>{% endfor %}</select><button class="btn">Guardar</button></div></form>
+{% if session.rol == 'admin' %}
+<form method="post" action="{{ url_for('asignar', tid=t.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label for="mod_id">Moderador asignado</label><div class="row"><select id="mod_id" name="mod_id"><option value="">Sin asignar</option>{% for m in mods %}<option value="{{ m.id }}" {{ 'selected' if m.id == t.mod_id }}>{{ m.nombre }}</option>{% endfor %}</select><button class="btn">Asignar</button></div></form>
+{% endif %}
+</div>
+<h2>Notas internas</h2>
+<form method="post" action="{{ url_for('nota', tid=t.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label for="texto">Agregar nota</label><textarea id="texto" name="texto" rows="2" maxlength="1000"></textarea><p><button class="btn">Guardar nota</button></p></form>
+{% for n in notas %}<div class="nota">{{ n.texto }}<small>{{ n.nombre }} · {{ n.creado.strftime('%d/%m/%Y %H:%M') }}</small></div>{% else %}<p class="sub">Aún no hay notas.</p>{% endfor %}
+<div class="row" style="margin-top:14px">
+{% if session.rol == 'mod' %}<form method="post" action="{{ url_for('soltar', tid=t.id) }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="btn ghost">Soltar ticket</button></form>{% endif %}
+{% if session.rol == 'admin' %}<form method="post" action="{{ url_for('eliminar', tid=t.id) }}" onsubmit="return confirm('¿Eliminar este ticket? Esta acción no se puede deshacer.')"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="btn danger">Eliminar ticket</button></form>{% endif %}
+</div></div>
+{% endif %}
+{% endblock %}

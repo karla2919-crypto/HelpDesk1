@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block c %}
+<div class="card narrow"><h1>Nueva solicitud</h1>
+<form method="post"><input type="hidden" name="csrf" value="{{ csrf() }}">
+<label for="asunto">Asunto</label><input id="asunto" name="asunto" maxlength="120" required>
+<div class="row"><div><label for="categoria">Categoría</label><select id="categoria" name="categoria">{% for c in CATS %}<option>{{ c }}</option>{% endfor %}</select></div>
+<div><label for="prioridad">Prioridad</label><select id="prioridad" name="prioridad">{% for p in PRI %}<option value="{{ p }}" {{ 'selected' if p == 'media' }}>{{ p|capitalize }}</option>{% endfor %}</select></div></div>
+<label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" rows="5" maxlength="2000" required></textarea>
+<p><button class="btn">Enviar solicitud</button></p></form></div>{% endblock %}

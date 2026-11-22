@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block c %}
+<h1>Usuarios</h1>
+<div class="card tabla">
+{% if rows %}<table><tr><th>Nombre</th><th>Usuario</th><th>Correo</th><th>Teléfono</th><th>Registro</th><th>Tickets</th><th>Último</th></tr>
+{% for u in rows %}<tr><td>{{ u.nombre }}</td><td>{{ u.usuario }}</td><td>{{ u.email }}</td><td>{{ u.tel or '—' }}</td><td>{{ u.creado.strftime('%d/%m/%Y') }}</td><td>{{ u.total }}</td><td>{{ u.ultimo.strftime('%d/%m/%Y %H:%M') if u.ultimo else '—' }}</td></tr>{% endfor %}</table>
+{% else %}<p class="empty">Todavía no hay usuarios registrados.</p>{% endif %}
+</div>{% endblock %}

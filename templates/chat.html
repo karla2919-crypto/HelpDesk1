@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% block c %}
+<h1>Chat del staff</h1>
+<div class="card"><div id="msgs"><p class="empty" id="vacio">Sin mensajes. Escribe el primero.</p></div>
+<form id="cf" class="row" style="flex-wrap:nowrap"><input id="cm" maxlength="500" placeholder="Escribe un mensaje al staff" aria-label="Mensaje" autocomplete="off"><button class="btn" style="flex:0 0 auto">Enviar</button></form></div>
+<script>
+var last=0,box=document.getElementById("msgs"),CSRF="{{ csrf() }}";
+function pull(){
+ fetch("{{ url_for('chat_mensajes') }}?desde="+last).then(function(r){return r.json()}).then(function(d){
+  if(!d.mensajes.length)return;
+  var v=document.getElementById("vacio");if(v)v.remove();
+  d.mensajes.forEach(function(m){
+   var e=document.createElement("div");e.className="m"+(m.user_id===d.yo?" yo":"");
+   var s=document.createElement("small");s.textContent=(m.user_id===d.yo?"Tú":m.nombre+(m.rol==="admin"?" (admin)":""))+" · "+m.hora;
+   e.appendChild(s);e.appendChild(document.createTextNode(m.texto));box.appendChild(e);last=m.id;
+  });
+  box.scrollTop=box.scrollHeight;
+ }).catch(function(){});
+}
+document.getElementById("cf").onsubmit=function(ev){
+ ev.preventDefault();var i=document.getElementById("cm"),t=i.value.trim();if(!t)return;i.value="";
+ fetch("{{ url_for('chat_enviar') }}",{method:"POST",headers:{"X-CSRF":CSRF,"Content-Type":"application/x-www-form-urlencoded"},body:"texto="+encodeURIComponent(t)}).then(pull);
+};
+pull();setInterval(pull,3000);
+</script>{% endblock %}
