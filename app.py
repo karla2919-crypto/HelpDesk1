@@ -1,5 +1,7 @@
 import os
 import secrets
+import time
+from urllib.parse import urlparse
 from functools import wraps
 
 import pymysql
@@ -11,16 +13,19 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "cambia-esta-clave-en-produccion")
 app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 
+_u = urlparse(os.environ.get("MYSQL_URL") or os.environ.get("MYSQL_PUBLIC_URL") or "")
 CFG = dict(
-    host=os.environ.get("MYSQLHOST", "localhost"),
-    user=os.environ.get("MYSQLUSER", "root"),
-    password=os.environ.get("MYSQLPASSWORD", ""),
-    database=os.environ.get("MYSQLDATABASE", "helpdesk"),
-    port=int(os.environ.get("MYSQLPORT", 3306)),
+    host=_u.hostname or os.environ.get("MYSQLHOST", "localhost"),
+    user=_u.username or os.environ.get("MYSQLUSER", "root"),
+    password=_u.password or os.environ.get("MYSQLPASSWORD", ""),
+    database=_u.path.lstrip("/") or os.environ.get("MYSQLDATABASE", "helpdesk"),
+    port=_u.port or int(os.environ.get("MYSQLPORT", 3306)),
     charset="utf8mb4",
     autocommit=True,
     cursorclass=pymysql.cursors.DictCursor,
 )
+print("DB host:", CFG["host"], "| variables MYSQL* vistas:",
+      sorted(k for k in os.environ if k.startswith("MYSQL")), flush=True)
 ET = {"abierto": "Abierto", "proceso": "En proceso", "cerrado": "Cerrado"}
 PRI = ("baja", "media", "alta")
 CATS = ("Hardware", "Software", "Red", "Cuenta y accesos", "Otro")
@@ -29,7 +34,16 @@ app.jinja_env.globals.update(ET=ET, CATS=CATS, csrf=lambda: session.get("csrf", 
 
 # ---------- base de datos ----------
 def init_db():
-    c = pymysql.connect(**CFG)
+    c = None
+    for intento in range(10):
+        try:
+            c = pymysql.connect(**CFG)
+            break
+        except pymysql.err.OperationalError as e:
+            print(f"MySQL no disponible (intento {intento + 1}/10): {e}", flush=True)
+            time.sleep(3)
+    if c is None:
+        raise SystemExit("No se pudo conectar a MySQL. Revisa MYSQL_URL o las variables MYSQL*.")
     with c.cursor() as cur:
         ruta = os.path.join(os.path.dirname(__file__), "database.sql")
         with open(ruta, encoding="utf-8") as f:
